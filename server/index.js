@@ -11,7 +11,7 @@ app.use(cors());
 
 // Set up Socket.IO server
 const io = new Server(server, {
-    cors: { origin: "http://localhost:3000", methods: ["GET", "POST"] },
+    cors: { origin: "https://watch-party-n91lltyfq-harsh-mehtas-projects-7856af38.vercel.app", methods: ["GET", "POST"] },
     transports: ["websocket", "polling"],
 });
 
