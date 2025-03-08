@@ -25,7 +25,7 @@ const RoomPage = () => {
     useEffect(() => {
         // Initialize Peer instance
         peerInstance.current = new Peer(undefined, {
-            host: "localhost",
+            host: "https://watch-party-flax.vercel.app",
             port: 5001,
             path: "/peerjs",
             secure: false,

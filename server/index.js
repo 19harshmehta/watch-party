@@ -32,6 +32,7 @@ const io = new Server(server, {
 const peerServer = PeerServer({
     port: 5001, // Use a different port for PeerJS
     path: "/peerjs", // Endpoint for PeerJS connections
+    secure: true,
 });
 
 const rooms = {};
