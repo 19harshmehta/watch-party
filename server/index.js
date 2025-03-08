@@ -8,11 +8,24 @@ const { PeerServer } = require("peer");
 const app = express();
 const server = http.createServer(app);
 app.use(cors());
+const allowedOrigins = [
+    "https://watch-party-flax.vercel.app", // Your Vercel frontend URL
+    "http://localhost:3000", // For local development
+];
 
-// Set up Socket.IO server
+app.use(
+    cors({
+        origin: allowedOrigins,
+        methods: ["GET", "POST"],
+        credentials: true,
+    })
+);
+
 const io = new Server(server, {
-    cors: { origin: "https://watch-party-n91lltyfq-harsh-mehtas-projects-7856af38.vercel.app", methods: ["GET", "POST"] },
-    transports: ["websocket", "polling"],
+    cors: {
+        origin: allowedOrigins,
+        methods: ["GET", "POST"],
+    },
 });
 
 // Set up PeerJS server
