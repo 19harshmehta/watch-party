@@ -7,24 +7,25 @@ const { PeerServer } = require("peer");
 
 const app = express();
 const server = http.createServer(app);
-app.use(cors());
+
+// Allow requests from your frontend domain
 const allowedOrigins = [
-    "https://watch-party-flax.vercel.app", // Your Vercel frontend URL
+    "https://watch-party-wsj0ighu4-harsh-mehtas-projects-7856af38.vercel.app", // Your Vercel frontend URL
     "http://localhost:3000", // For local development
 ];
 
 app.use(
     cors({
-        origin: allowedOrigins,
-        methods: ["GET", "POST"],
-        credentials: true,
+        origin: allowedOrigins, // Allow requests from these origins
+        methods: ["GET", "POST"], // Allow only GET and POST requests
+        credentials: true, // Allow credentials (cookies, authorization headers)
     })
 );
 
 const io = new Server(server, {
     cors: {
-        origin: allowedOrigins,
-        methods: ["GET", "POST"],
+        origin: allowedOrigins, // Allow Socket.IO connections from these origins
+        methods: ["GET", "POST"], // Allow only GET and POST requests
     },
 });
 
@@ -32,7 +33,7 @@ const io = new Server(server, {
 const peerServer = PeerServer({
     port: 5001, // Use a different port for PeerJS
     path: "/peerjs", // Endpoint for PeerJS connections
-    secure: true,
+    secure: false, // Set to true if using HTTPS
 });
 
 const rooms = {};

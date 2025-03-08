@@ -3,8 +3,11 @@ import { useParams, useLocation } from "react-router-dom";
 import io from "socket.io-client";
 import Peer from "peerjs";
 
-const socket = io("https://watch-party-t6zg.onrender.com");
-
+const socket = io("https://watch-party-t6zg.onrender.com", {
+    transports: ["websocket", "polling"],
+    reconnection: true, // Auto-reconnect
+    reconnectionAttempts: 5,
+});
 const RoomPage = () => {
     const { roomId } = useParams();
     const location = useLocation();
