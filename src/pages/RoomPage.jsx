@@ -5,9 +5,10 @@ import Peer from "peerjs";
 
 const socket = io("https://watch-party-t6zg.onrender.com", {
     transports: ["websocket", "polling"],
-    reconnection: true, // Auto-reconnect
+    reconnection: true,
     reconnectionAttempts: 5,
 });
+
 const RoomPage = () => {
     const { roomId } = useParams();
     const location = useLocation();
@@ -26,52 +27,45 @@ const RoomPage = () => {
     const chatWindowRef = useRef();
 
     useEffect(() => {
-        // Initialize Peer instance
         peerInstance.current = new Peer(undefined, {
-            host: "https://watch-party-t6zg.onrender.com",
-            port: 5001,
+            host: "watch-party-t6zg.onrender.com",
+            port: 443,
             path: "/peerjs",
-            secure: false,
+            secure: true,
         });
 
-        if (peerInstance.current) {
-            peerInstance.current.on("open", (id) => {
-                console.log("PeerJS ID:", id);
-                socket.emit("join-room", { roomId, userId: id, username });
+        peerInstance.current.on("open", (id) => {
+            console.log("PeerJS ID:", id);
+            socket.emit("join-room", { roomId, userId: id, username });
 
-                // Get the local user's media stream and display it
-                navigator.mediaDevices
-                    .getUserMedia({ video: true, audio: true })
-                    .then((stream) => {
-                        userVideo.current.srcObject = stream;
-                        playVideo(userVideo.current);
-                        addVideoStream(userVideo.current, stream, id);
+            navigator.mediaDevices
+                .getUserMedia({ video: true, audio: true })
+                .then((stream) => {
+                    userVideo.current.srcObject = stream;
+                    playVideo(userVideo.current);
+                    addVideoStream(userVideo.current, stream, id);
 
-                        // Handle incoming calls
-                        peerInstance.current.on("call", (call) => {
-                            call.answer(stream);
-                            const video = document.createElement("video");
-                            call.on("stream", (userVideoStream) => {
-                                addVideoStream(video, userVideoStream, call.peer);
-                            });
+                    peerInstance.current.on("call", (call) => {
+                        call.answer(stream);
+                        const video = document.createElement("video");
+                        call.on("stream", (userVideoStream) => {
+                            addVideoStream(video, userVideoStream, call.peer);
                         });
-
-                        // Call all existing users in the room
-                        socket.on("existing-users", (users) => {
-                            users.forEach((userId) => {
-                                if (userId !== id) {
-                                    connectToNewUser(userId, stream);
-                                }
-                            });
-                        });
-                    })
-                    .catch((error) => {
-                        console.error("Error accessing media devices:", error);
                     });
-            });
-        }
 
-        // Handle user-joined event
+                    socket.on("existing-users", (users) => {
+                        users.forEach((userId) => {
+                            if (userId !== id) {
+                                connectToNewUser(userId, stream);
+                            }
+                        });
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error accessing media devices:", error);
+                });
+        });
+
         socket.on("user-joined", (userId) => {
             console.log("New user joined:", userId);
             navigator.mediaDevices
@@ -84,19 +78,16 @@ const RoomPage = () => {
                 });
         });
 
-        // Handle user-left event
         socket.on("user-left", (userId) => {
             console.log("User left:", userId);
             removeVideoStream(userId);
         });
 
-        // Handle chat messages
         socket.on("receive-message", (message) => {
             setMessages((prevMessages) => [...prevMessages, message]);
             scrollChatToBottom();
         });
 
-        // Handle movie URL updates
         socket.on("update-movie-url", (url) => {
             setVideoUrl(url);
             if (movieVideoRef.current) {
@@ -105,7 +96,6 @@ const RoomPage = () => {
             }
         });
 
-        // Handle movie playback synchronization
         socket.on("play-movie", () => {
             if (movieVideoRef.current) {
                 playVideo(movieVideoRef.current);
@@ -121,11 +111,10 @@ const RoomPage = () => {
         socket.on("seek-movie", (time) => {
             if (movieVideoRef.current) {
                 movieVideoRef.current.currentTime = time;
-                playVideo(movieVideoRef.current); // Play after seeking
+                playVideo(movieVideoRef.current);
             }
         });
 
-        // Cleanup on unmount
         return () => {
             if (peerInstance.current) {
                 peerInstance.current.destroy();
@@ -180,7 +169,7 @@ const RoomPage = () => {
         if (playPromise !== undefined) {
             playPromise.catch((error) => {
                 console.error("Error playing video:", error);
-                setTimeout(() => playVideo(video), 500); // Retry after a short delay
+                setTimeout(() => playVideo(video), 500);
             });
         }
     };
@@ -238,12 +227,9 @@ const RoomPage = () => {
                 Room {roomId}
             </h1>
             <div className="w-full max-w-6xl flex gap-6">
-                {/* Video Grid */}
                 <div ref={videoGrid} className="grid grid-cols-2 gap-4 w-1/4">
                     <video ref={userVideo} className="w-full h-full rounded-lg object-cover" muted />
                 </div>
-
-                {/* Movie Screen */}
                 <div className="flex-1 bg-black/20 rounded-lg p-4">
                     {videoUrl ? (
                         <video
@@ -261,8 +247,6 @@ const RoomPage = () => {
                         </div>
                     )}
                 </div>
-
-                {/* Chat Window */}
                 {showChat && (
                     <div className="w-1/3 bg-white/10 backdrop-blur-md rounded-lg p-4">
                         <div ref={chatWindowRef} className="h-96 overflow-y-auto mb-4">
@@ -292,8 +276,6 @@ const RoomPage = () => {
                     </div>
                 )}
             </div>
-
-            {/* Movie Input and Chat Toggle */}
             <div className="mt-6 w-full max-w-6xl flex gap-4">
                 <input
                     type="text"
