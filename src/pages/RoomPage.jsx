@@ -3,6 +3,7 @@ import { useParams, useLocation } from "react-router-dom";
 import io from "socket.io-client";
 import Peer from "peerjs";
 
+// Initialize Socket.IO connection
 const socket = io("https://watch-party-t6zg.onrender.com", {
     transports: ["websocket", "polling"],
     reconnection: true,
@@ -20,6 +21,7 @@ const RoomPage = () => {
     const [showChat, setShowChat] = useState(false);
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState([]);
+
     const userVideo = useRef();
     const videoGrid = useRef();
     const movieVideoRef = useRef();
@@ -27,6 +29,7 @@ const RoomPage = () => {
     const chatWindowRef = useRef();
 
     useEffect(() => {
+        // Initialize PeerJS
         peerInstance.current = new Peer(undefined, {
             host: "watch-party-t6zg.onrender.com",
             port: 443,
@@ -38,6 +41,7 @@ const RoomPage = () => {
             console.log("PeerJS ID:", id);
             socket.emit("join-room", { roomId, userId: id, username });
 
+            // Get user media (video and audio)
             navigator.mediaDevices
                 .getUserMedia({ video: true, audio: true })
                 .then((stream) => {
@@ -45,6 +49,7 @@ const RoomPage = () => {
                     playVideo(userVideo.current);
                     addVideoStream(userVideo.current, stream, id);
 
+                    // Handle incoming calls
                     peerInstance.current.on("call", (call) => {
                         call.answer(stream);
                         const video = document.createElement("video");
@@ -53,6 +58,7 @@ const RoomPage = () => {
                         });
                     });
 
+                    // Connect to existing users in the room
                     socket.on("existing-users", (users) => {
                         users.forEach((userId) => {
                             if (userId !== id) {
@@ -66,6 +72,12 @@ const RoomPage = () => {
                 });
         });
 
+        // Handle PeerJS errors
+        peerInstance.current.on("error", (error) => {
+            console.error("PeerJS Error:", error);
+        });
+
+        // Handle new user joining
         socket.on("user-joined", (userId) => {
             console.log("New user joined:", userId);
             navigator.mediaDevices
@@ -78,16 +90,19 @@ const RoomPage = () => {
                 });
         });
 
+        // Handle user leaving
         socket.on("user-left", (userId) => {
             console.log("User left:", userId);
             removeVideoStream(userId);
         });
 
+        // Handle incoming chat messages
         socket.on("receive-message", (message) => {
             setMessages((prevMessages) => [...prevMessages, message]);
             scrollChatToBottom();
         });
 
+        // Handle movie URL updates
         socket.on("update-movie-url", (url) => {
             setVideoUrl(url);
             if (movieVideoRef.current) {
@@ -96,6 +111,7 @@ const RoomPage = () => {
             }
         });
 
+        // Handle movie play/pause/seek events
         socket.on("play-movie", () => {
             if (movieVideoRef.current) {
                 playVideo(movieVideoRef.current);
@@ -115,6 +131,7 @@ const RoomPage = () => {
             }
         });
 
+        // Cleanup on component unmount
         return () => {
             if (peerInstance.current) {
                 peerInstance.current.destroy();
@@ -123,6 +140,7 @@ const RoomPage = () => {
         };
     }, [roomId, username]);
 
+    // Connect to a new user
     const connectToNewUser = (userId, stream) => {
         const call = peerInstance.current.call(userId, stream);
         const video = document.createElement("video");
@@ -132,6 +150,7 @@ const RoomPage = () => {
         setPeers((prevPeers) => ({ ...prevPeers, [userId]: call }));
     };
 
+    // Add a video stream to the grid
     const addVideoStream = (video, stream, userId) => {
         const existingVideo = document.querySelector(`video[data-user-id="${userId}"]`);
         if (existingVideo) {
@@ -149,6 +168,7 @@ const RoomPage = () => {
         }
     };
 
+    // Remove a video stream from the grid
     const removeVideoStream = (userId) => {
         if (peers[userId]) {
             peers[userId].close();
@@ -164,6 +184,7 @@ const RoomPage = () => {
         }
     };
 
+    // Play a video element
     const playVideo = (video) => {
         const playPromise = video.play();
         if (playPromise !== undefined) {
@@ -174,12 +195,14 @@ const RoomPage = () => {
         }
     };
 
+    // Handle movie URL change
     const handleMovieUrlChange = (e) => {
         const url = e.target.value;
         setVideoUrl(url);
         socket.emit("update-movie-url", roomId, url);
     };
 
+    // Handle movie play
     const handlePlayMovie = () => {
         if (movieVideoRef.current) {
             playVideo(movieVideoRef.current);
@@ -187,6 +210,7 @@ const RoomPage = () => {
         }
     };
 
+    // Handle movie pause
     const handlePauseMovie = () => {
         if (movieVideoRef.current) {
             movieVideoRef.current.pause();
@@ -194,6 +218,7 @@ const RoomPage = () => {
         }
     };
 
+    // Handle movie seek
     const handleSeekMovie = (time) => {
         if (movieVideoRef.current) {
             movieVideoRef.current.currentTime = time;
@@ -201,6 +226,7 @@ const RoomPage = () => {
         }
     };
 
+    // Send a chat message
     const sendMessage = () => {
         if (message.trim()) {
             const messageData = { username, text: message };
@@ -211,12 +237,14 @@ const RoomPage = () => {
         }
     };
 
+    // Scroll chat to the bottom
     const scrollChatToBottom = () => {
         if (chatWindowRef.current) {
             chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
         }
     };
 
+    // Toggle chat visibility
     const toggleChat = () => {
         setShowChat(!showChat);
     };

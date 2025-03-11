@@ -3,14 +3,15 @@ const express = require("express");
 const http = require("http");
 const cors = require("cors");
 const { Server } = require("socket.io");
-const { PeerServer } = require("peer");
+const { ExpressPeerServer } = require("peer");
 
 const app = express();
-const server = http.createServer(app);
+const server = http.createServer(app); // Create HTTP server
 
+// CORS Configuration
 const allowedOrigins = [
-    "https://watch-party-wsj0ighu4-harsh-mehtas-projects-7856af38.vercel.app",
-    "http://localhost:3000",
+    "http://localhost:3000", // Add your frontend URL here
+    "watch-party-d0dzv92pm-harsh-mehtas-projects-7856af38.vercel.app", // Add your deployed frontend URL here
 ];
 
 app.use(
@@ -21,6 +22,7 @@ app.use(
     })
 );
 
+// Socket.IO Setup
 const io = new Server(server, {
     cors: {
         origin: allowedOrigins,
@@ -28,14 +30,15 @@ const io = new Server(server, {
     },
 });
 
-const peerServer = PeerServer({
-    port: 5001,
+// PeerJS Setup
+const peerServer = ExpressPeerServer(server, {
     path: "/peerjs",
-    secure: true,
+    debug: true, // Enable debug logging
 });
 
-app.use("/peerjs", peerServer);
+app.use("/peerjs", peerServer); // Mount PeerJS at /peerjs
 
+// Room Management
 const rooms = {};
 
 io.on("connection", (socket) => {
@@ -51,7 +54,6 @@ io.on("connection", (socket) => {
         rooms[roomId].add(userId);
 
         socket.to(roomId).emit("user-joined", userId, username);
-
         socket.emit("existing-users", Array.from(rooms[roomId]));
 
         console.log(`🟢 User ${username} (${userId}) joined room ${roomId}`);
@@ -90,5 +92,9 @@ io.on("connection", (socket) => {
     });
 });
 
+// Start the server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`✅ PeerJS Server running at: http://localhost:${PORT}/peerjs`);
+});
